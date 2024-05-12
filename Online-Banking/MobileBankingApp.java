@@ -1,138 +1,129 @@
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.*;
 
-public class MobileBankingApp extends JFrame implements ActionListener {
+public class MobileBankingApp extends JFrame {
     // GUI components
-    private JLabel titleLabel = new JLabel("Mobile Banking App");
-    private JLabel nameLabel = new JLabel("Name:");
-    private JTextField nameTextField = new JTextField();
-    private JLabel accountLabel = new JLabel("Account Number:");
-    private JTextField accountTextField = new JTextField();
-    private JLabel balanceLabel = new JLabel("Balance:");
-    private JTextField balanceTextField = new JTextField();
+    private JTextField nameTextField = new JTextField(20);
+    private JTextField accountTextField = new JTextField(10);
+    private JTextField balanceTextField = new JTextField(10);
+    private JTextField depositTextField = new JTextField(10);
+    private JTextField withdrawTextField = new JTextField(10);
+    private JTextArea transactionsTextArea = new JTextArea(10, 30);
     private JButton createAccountButton = new JButton("Create Account");
-    private JLabel depositLabel = new JLabel("Deposit Amount:");
-    private JTextField depositTextField = new JTextField();
     private JButton depositButton = new JButton("Deposit");
-    private JLabel withdrawLabel = new JLabel("Withdraw Amount:");
-    private JTextField withdrawTextField = new JTextField();
     private JButton withdrawButton = new JButton("Withdraw");
-    private JButton viewBalanceButton = new JButton("View Balance"); // Added button
-    private JTextArea transactionsTextArea = new JTextArea("No transactions yet.");
+    private JButton viewBalanceButton = new JButton("View Balance");
 
     // MobileBankingApp properties
     private String name;
     private String accountNumber;
     private double balance;
-    private ArrayList<Transaction> transactionList = new ArrayList<Transaction>();
+    private ArrayList<Transaction> transactionList = new ArrayList<>();
 
     public MobileBankingApp() {
-        // Set up GUI components
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(9, 2));
-        panel.add(titleLabel);
-        panel.add(new JLabel());
-        panel.add(nameLabel);
-        panel.add(nameTextField);
-        panel.add(accountLabel);
-        panel.add(accountTextField);
-        panel.add(balanceLabel);
-        panel.add(balanceTextField);
-        panel.add(new JLabel());
-        panel.add(createAccountButton);
-        panel.add(depositLabel);
-        panel.add(depositTextField);
-        panel.add(new JLabel());
-        panel.add(depositButton);
-        panel.add(withdrawLabel);
-        panel.add(withdrawTextField);
-        panel.add(new JLabel());
-        panel.add(withdrawButton);
-        panel.add(viewBalanceButton); // Added button
-        panel.add(new JScrollPane(transactionsTextArea));
-        add(panel);
-
-        // Add action listeners to buttons
-        createAccountButton.addActionListener(this);
-        depositButton.addActionListener(this);
-        withdrawButton.addActionListener(this);
-        viewBalanceButton.addActionListener(this); // Added button
-
-        // Set frame properties
-        setTitle("Mobile Banking App");
-        setSize(500, 500);
-        setVisible(true);
+        super("Mobile Banking App");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(500, 300);
+        setLocationRelativeTo(null);
+
+        JPanel inputPanel = new JPanel(new GridLayout(0, 2, 5, 5));
+        inputPanel.add(new JLabel("Name:"));
+        inputPanel.add(nameTextField);
+        inputPanel.add(new JLabel("Account Number:"));
+        inputPanel.add(accountTextField);
+        inputPanel.add(new JLabel("Initial Balance:"));
+        inputPanel.add(balanceTextField);
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(createAccountButton);
+        buttonPanel.add(depositButton);
+        buttonPanel.add(withdrawButton);
+        buttonPanel.add(viewBalanceButton);
+
+        JPanel transactionPanel = new JPanel();
+        transactionPanel.add(new JLabel("Transactions:"));
+        transactionsTextArea.setEditable(false);
+        transactionPanel.add(new JScrollPane(transactionsTextArea));
+
+        setLayout(new BorderLayout(10, 10));
+        add(inputPanel, BorderLayout.NORTH);
+        add(buttonPanel, BorderLayout.CENTER);
+        add(transactionPanel, BorderLayout.SOUTH);
+
+        addListeners();
+        setVisible(true);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == createAccountButton) {
-            // Validate input and create new account if input is valid
-            String namePattern = "[a-zA-Z]+";
-            String accountPattern = "\\d{10}";
-            String balancePattern = "\\d+(\\.\\d+)?";
-            Pattern pattern = Pattern.compile(namePattern);
-            Matcher nameMatcher = pattern.matcher(nameTextField.getText());
-            Matcher accountMatcher = Pattern.compile(accountPattern).matcher(accountTextField.getText());
-            Matcher balanceMatcher = Pattern.compile(balancePattern).matcher(balanceTextField.getText());
-            if (!nameMatcher.matches()) {
-                JOptionPane.showMessageDialog(this, "Invalid name. Please enter only alphabetical characters.");
-            } else if (!accountMatcher.matches()) {
-                JOptionPane.showMessageDialog(this, "Invalid account number. Please enter 10 digits only.");
-            } else if (!balanceMatcher.matches()) {
-                JOptionPane.showMessageDialog(this, "Invalid balance. Please enter a valid decimal number.");
-            } else {
-                // Create new account if input is valid
-                name = nameTextField.getText();
-                accountNumber = accountTextField.getText();
-                balance = Double.parseDouble(balanceTextField.getText());
-                JOptionPane.showMessageDialog(this, "Account has been created successfully!");
-            }
-        } else if (e.getSource() == depositButton) {
-            // Deposit entered amount into account balance and add a new transaction
+    private void addListeners() {
+        createAccountButton.addActionListener(this::createAccount);
+        depositButton.addActionListener(this::deposit);
+        withdrawButton.addActionListener(this::withdraw);
+        viewBalanceButton.addActionListener(this::viewBalance);
+    }
+
+private void createAccount(ActionEvent e) {
+    if (validateInput(nameTextField.getText(), "<a-zA-Z>+", "Invalid name. Please enter only alphabetical characters.") &&
+        validateInput(accountTextField.getText(), "\\d{10}", "Invalid account number. Please enter 10 digits only.") &&
+        validateInput(balanceTextField.getText(), "\\d+(\\.\\d+)?", "Invalid balance. Please enter a valid decimal number.")) {
+        name = nameTextField.getText();
+        accountNumber = accountTextField.getText();
+        balance = Double.parseDouble(balanceTextField.getText());
+        JOptionPane.showMessageDialog(this, "Account has been created successfully!");
+    }
+}
+
+    
+
+    private void deposit(ActionEvent e) {
+        try {
             double amount = Double.parseDouble(depositTextField.getText());
             balance += amount;
-            Transaction transaction = new Transaction("Deposit", amount);
-            transactionList.add(transaction);
+            transactionList.add(new Transaction("Deposit", amount));
             updateTransactionHistory();
             JOptionPane.showMessageDialog(this, "Deposit of " + amount + " has been made successfully!");
-        } else if (e.getSource() == withdrawButton) {
-            // Withdraw entered amount from account balance if funds are available and add a new transaction
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid deposit amount.");
+        }
+    }
+
+    private void withdraw(ActionEvent e) {
+        try {
             double amount = Double.parseDouble(withdrawTextField.getText());
             if (balance >= amount) {
                 balance -= amount;
-                Transaction transaction = new Transaction("Withdrawal", amount);
-                transactionList.add(transaction);
+                transactionList.add(new Transaction("Withdrawal", amount));
                 updateTransactionHistory();
                 JOptionPane.showMessageDialog(this, "Withdrawal of " + amount + " has been made successfully!");
             } else {
                 JOptionPane.showMessageDialog(this, "Insufficient funds.");
             }
-        } else if (e.getSource() == viewBalanceButton) {
-            // Display the current account balance
-            JOptionPane.showMessageDialog(this, "Current balance: " + balance);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid withdrawal amount.");
         }
+    }
+
+    private void viewBalance(ActionEvent e) {
+        JOptionPane.showMessageDialog(this, "Current balance: " + balance);
+    }
+
+    private boolean validateInput(String input, String pattern, String errorMessage) {
+        if (!Pattern.matches(pattern, input)) {
+            JOptionPane.showMessageDialog(this, errorMessage);
+            return false;
+        }
+        return true;
     }
 
     private void updateTransactionHistory() {
-        transactionsTextArea.setText(""); // Clear existing text
-        for (Transaction transaction : transactionList) {
-            String text = transaction.getType() + ": " + transaction.getAmount();
-            transactionsTextArea.append(text + "\n");
-        }
+        transactionsTextArea.setText("");
+        transactionList.forEach(transaction -> transactionsTextArea.append(transaction.toString() + "\n"));
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                new MobileBankingApp();
-            }
-        });
+    public static void main(String<> args) {
+        SwingUtilities.invokeLater(MobileBankingApp::new);
     }
 }
-
